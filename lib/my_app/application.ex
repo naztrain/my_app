@@ -10,6 +10,7 @@ defmodule MyApp.Application do
     children = [
       # Starts a worker by calling: MyApp.Worker.start_link(arg)
       # {MyApp.Worker, arg}
+      MyApp.Repo,
       {MyBroadway, []}
     ]
 
