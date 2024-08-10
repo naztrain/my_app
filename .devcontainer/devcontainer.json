@@ -1,8 +1,6 @@
 {
     "name": "MyApp",
     "dockerComposeFile": "docker-compose.yml",
-    "service": "my-service",
-    "workspaceFolder": "/workspace",
     "postCreateCommand": "docker-compose up -d",
     "shutdownAction": "none",
     "customizations": {
