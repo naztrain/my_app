@@ -1,7 +1,7 @@
 import Config
 
 config :my_app, MyApp.Repo,
-  database: "Ecom319",
+  database: "elevate",
   username: "elevate",
   password: "elevate",
   hostname: "localhost"
