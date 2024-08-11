@@ -1,6 +1,14 @@
 {
   "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "postCreateCommand": "docker-compose up -d",
+  //"postCreateCommand": "docker-compose -f /workspaces/my_app/docker-compose.yml up -d",  
   "features": {
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "JakeBecker.elixir-ls"
+      ]
+    }
   }
 }
