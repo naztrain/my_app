@@ -3,7 +3,7 @@ defmodule MyApp.Repo.Migrations.CreateSalesOrders do
 
   def change do
     create table(:sales_orders) do
-      add :customer_id, references(:customers, on_delete: :nothing)
+      add :customer_id, references(:customers, on_delete: :restrict)
       add :date, :naive_datetime
 
       timestamps()
