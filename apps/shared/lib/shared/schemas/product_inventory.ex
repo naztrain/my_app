@@ -49,11 +49,11 @@ defmodule Shared.ProductInventory do
 
       case updated_inventory do
         {:ok, _} ->
-          Logger.info("Successfully updated inventory for product_id #{product_inventory.product_id}")
+          Logger.info("Successfully updated inventory for product_id ##{product_inventory.product_id}")
           :ok
         {:error, changeset} ->
           Logger.metadata(updated_inventory)
-          Logger.error("Failed to update inventory for product_id #{product_inventory.product_id}")
+          Logger.error("Failed to update inventory for product_id ##{product_inventory.product_id}")
           Repo.rollback(changeset)
           :error
 

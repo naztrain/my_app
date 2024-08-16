@@ -1,9 +1,12 @@
 defmodule OrderProducer.OrderService do
   require Logger
   alias Shared.Repo
+  alias Shared.Customer
   alias Shared.ProductInventory
   alias Shared.SalesOrderLineItem
   alias Shared.SalesOrder
+  use Ecto.Schema
+  import Ecto.Query
 
 
   def start_link(_opts) do
@@ -12,51 +15,59 @@ defmodule OrderProducer.OrderService do
 
   def create_sales_order(customer_id, product_quantities) do
     Logger.info("Creating sales order for customer ##{customer_id}")
-    result =
-      Repo.transaction(fn ->
-        with :ok <- validate_inventory(product_quantities) do
-          # Create the SalesOrder record
-          sales_order_changeset =
-            SalesOrder.changeset(%SalesOrder{}, %{customer_id: customer_id, date: NaiveDateTime.utc_now()})
+    if(Customer.validate_customer_exists(customer_id)) do
+      result =
+        Repo.transaction(fn ->
 
-          case Repo.insert(sales_order_changeset) do
-            {:ok, sales_order} ->
-              Logger.info("SalesOrder created with ID: #{sales_order.id}")
-              # Create SalesOrderLineItem records for each product_id and quantity
-              product_quantities
-              |> Enum.each(fn {product_id, quantity} ->
-                sales_order_line_item_changeset =
-                  SalesOrderLineItem.changeset(%SalesOrderLineItem{}, %{
-                    product_id: product_id,
-                    quantity: quantity,
-                    sales_order_id: sales_order.id,
-                    subtotal: 3.19
-                  })
-                Repo.insert!(sales_order_line_item_changeset)
-              end)
+          with :ok <- validate_inventory(product_quantities) do
+            # Create the SalesOrder record
+            sales_order_changeset =
+              SalesOrder.changeset(%SalesOrder{}, %{customer_id: customer_id, date: NaiveDateTime.utc_now()})
 
-              {:ok, sales_order.id}
+            case Repo.insert(sales_order_changeset) do
+              {:ok, sales_order} ->
+                Logger.info("SalesOrder created with id ##{sales_order.id}")
+                # Create SalesOrderLineItem records for each product_id and quantity
+                product_quantities
+                |> Enum.each(fn {product_id, quantity} ->
+                  sales_order_line_item_changeset =
+                    SalesOrderLineItem.changeset(%SalesOrderLineItem{}, %{
+                      product_id: product_id,
+                      quantity: quantity,
+                      sales_order_id: sales_order.id,
+                      subtotal: 3.19
+                    })
+                  Repo.insert!(sales_order_line_item_changeset)
+                end)
 
-            {:error, changeset} ->
-              Logger.error("Creating sales order failed. Transaction will roll back.")
-              Repo.rollback(changeset)
+                {:ok, sales_order.id}
+
+              {:error, changeset} ->
+                Logger.error("Creating sales order failed. Transaction will roll back.")
+                Repo.rollback(changeset)
+            end
+          else
+            {:error, message} ->
+              Logger.warn(message)
+              Repo.rollback(message)
           end
-        else
-          {:error, message} ->
-            Logger.error("Creating sales order failed. Transaction will roll back.")
-            Repo.rollback(message)
-        end
-      end)
-    # Now handle the result of the transaction:
-    case result do
-      {:ok, {:ok, sales_order_id}} ->
-        send_order_to_kafka(sales_order_id)
+        end)
+      # Now handle the result of the transaction:
+      case result do
+        {:ok, {:ok, sales_order_id}} ->
+          send_order_to_kafka(sales_order_id)
 
-      {:error, _reason} ->
-        Logger.metadata(result)
-        Logger.error("Unable to place this order. Some products may be out of stock. If you are running this app for the first time, you may need to try again.")
+        {:error, _reason} ->
+          Logger.warn("Unable to place this order.")
+      end
+
+    else
+      Logger.warn("Creating sales order failed. Customer ##{customer_id} does not exist.")
     end
+
   end
+
+
 
   defp validate_inventory(product_quantities) do
     # Check if the product_quantities list is empty
