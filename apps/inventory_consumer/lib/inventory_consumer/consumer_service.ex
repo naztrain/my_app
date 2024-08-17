@@ -17,8 +17,11 @@ defmodule InventoryConsumer.ConsumerService do
     client_id = :inventory_producer
     hosts = [localhost: 9092]
 
+    #:ok = :brod.start_client(hosts, client_id, _client_config=[])
+    #:ok = :brod.start_producer(client_id, topic, _producer_config = [])
     :ok = :brod.start_client(hosts, client_id, _client_config=[])
     :ok = :brod.start_producer(client_id, topic, _producer_config = [])
+
 
     Broadway.start_link(__MODULE__,
       name: __MODULE__,
