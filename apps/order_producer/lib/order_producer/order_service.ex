@@ -13,29 +13,40 @@ defmodule OrderProducer.OrderService do
   end
 
   def create_sales_order(customer_id, product_quantities) do
-    Logger.info("Creating sales order for customer ##{customer_id}")
-    if(Customer.validate_customer_exists(customer_id)) do
-      result =
-        Repo.transaction(fn ->
-
-          with :ok <- validate_inventory(product_quantities) do
-            add_sales_order_and_line_items_to_db(customer_id, product_quantities)
-          else
-            {:error, message} ->
-              Logger.warn(message)
-              Repo.rollback(message)
-          end
-        end)
-      # Now handle the result of the transaction:
-      case result do
-        {:ok, {:ok, sales_order_id}} ->
-          send_order_to_kafka(sales_order_id)
-        {:error, _reason} ->
-          Logger.warn("Unable to place this order.")
-      end
+    valid_quantities? = validate_quantities(product_quantities)
+    if(!valid_quantities?) do
+      Logger.warn("Creating sales order failed. All quantities should be above 0")
     else
-      Logger.warn("Creating sales order failed. Customer ##{customer_id} does not exist.")
+      if(Customer.validate_customer_exists(customer_id) and valid_quantities?) do
+        Logger.info("Creating sales order for customer ##{customer_id}")
+        result =
+          Repo.transaction(fn ->
+
+            with :ok <- validate_inventory(product_quantities) do
+              add_sales_order_and_line_items_to_db(customer_id, product_quantities)
+            else
+              {:error, message} ->
+                Logger.warn(message)
+                Repo.rollback(message)
+            end
+          end)
+        # Now handle the result of the transaction:
+        case result do
+          {:ok, {:ok, sales_order_id}} ->
+            send_order_to_kafka(sales_order_id)
+          {:error, _reason} ->
+            Logger.warn("Unable to place this order.")
+        end
+      else
+        Logger.warn("Creating sales order failed. Customer ##{customer_id} does not exist.")
+      end
     end
+  end
+
+  defp validate_quantities(product_quantities) do
+    Enum.all?(product_quantities, fn {_product_id, quantity} ->
+      quantity > 0
+    end)
   end
 
   defp add_sales_order_and_line_items_to_db(customer_id, product_quantities) do
