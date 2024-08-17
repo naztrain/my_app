@@ -1,9 +1,4 @@
-# UmbrellaApp
-
-**TODO: Add description**
-
-
-# AP Homework
+# My_App (UmbrellaApp)
 
 ## First Run:
 
