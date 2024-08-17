@@ -94,11 +94,11 @@ defmodule OrderProducer.OrderService do
     topic = "OrderCreated"
     client_id = :order_producer
     hosts = [localhost: 9092]
+    partition = 0
 
     :ok = :brod.start_client(hosts, client_id, _client_config=[])
     :ok = :brod.start_producer(client_id, topic, _producer_config = [])
 
-    partition = 0
     :ok = :brod.produce_sync(client_id, topic, partition, _key="", "#{sales_order_id}")
 
     #shut down brod in this module because if we hit it with a lot of requests, we need to reclaim resources.

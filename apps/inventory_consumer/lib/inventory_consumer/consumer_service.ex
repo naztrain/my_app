@@ -17,10 +17,9 @@ defmodule InventoryConsumer.ConsumerService do
     client_id = :inventory_producer
     hosts = [localhost: 9092]
 
-    #:ok = :brod.start_client(hosts, client_id, _client_config=[])
-    #:ok = :brod.start_producer(client_id, topic, _producer_config = [])
     :ok = :brod.start_client(hosts, client_id, _client_config=[])
     :ok = :brod.start_producer(client_id, topic, _producer_config = [])
+
 
 
     Broadway.start_link(__MODULE__,
@@ -66,7 +65,7 @@ defmodule InventoryConsumer.ConsumerService do
 
 
 
-  def update_inventory_for_sales_order(sales_order_id) do
+  defp update_inventory_for_sales_order(sales_order_id) do
     Logger.info("Updating inventory for sales order ##{sales_order_id}")
     sales_order_id
     |> get_sales_order_line_items()
